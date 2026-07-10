@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Precio Justo | Calculadora de recetas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Panaderia y pasteleria</p>
+          <h1>Calcula cuanto cobrar por cada porcion</h1>
+        </div>
+        <div class="status-pill" id="dataStatus">Usando costos de ejemplo</div>
+      </header>
+
+      <main class="workspace">
+        <section class="recipe-zone" aria-label="Calculadora de receta">
+          <div class="recipe-editor">
+            <div class="section-title">
+              <div>
+                <p class="eyebrow">Receta</p>
+                <h2>Pega tu preparacion</h2>
+              </div>
+              <button class="icon-button" id="sampleRecipeButton" type="button" title="Cargar receta de ejemplo" aria-label="Cargar receta de ejemplo">
+                <span aria-hidden="true">↻</span>
+              </button>
+            </div>
+
+            <label for="recipeText">Ingredientes</label>
+            <textarea id="recipeText" spellcheck="false" placeholder="Ejemplo:
+500 g harina
+250 g azucar
+4 huevos
+200 g mantequilla
+1 cdta vainilla"></textarea>
+
+            <div class="settings-grid">
+              <label>
+                Porciones
+                <input id="servingsInput" type="number" min="1" step="1" value="12" />
+              </label>
+              <label>
+                Margen de ganancia (%)
+                <input id="marginInput" type="number" min="0" max="95" step="1" value="45" />
+              </label>
+              <label>
+                Merma (%)
+                <input id="wasteInput" type="number" min="0" step="1" value="5" />
+              </label>
+              <label>
+                Mano de obra total (S/)
+                <input id="laborInput" type="number" min="0" step="0.1" value="12" />
+              </label>
+              <label>
+                Gastos indirectos (S/)
+                <input id="overheadInput" type="number" min="0" step="0.1" value="8" />
+              </label>
+              <label>
+                Redondear precio a
+                <select id="roundingInput">
+                  <option value="0.1">S/ 0.10</option>
+                  <option value="0.5" selected>S/ 0.50</option>
+                  <option value="1">S/ 1.00</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary-button" id="calculateButton" type="button">Calcular precio</button>
+              <button class="secondary-button" id="copyButton" type="button">Copiar resumen</button>
+            </div>
+          </div>
+
+          <aside class="result-panel" aria-label="Resultado de precio">
+            <div class="visual-panel">
+              <img src="assets/bakery-worktable.png" alt="Mesa de trabajo de pasteleria con ingredientes" />
+            </div>
+
+            <div class="price-summary">
+              <p class="eyebrow">Precio sugerido</p>
+              <div class="price" id="unitPrice">S/ 0.00</div>
+              <p id="priceNote">Ingresa una receta y calcula para ver el precio recomendado por unidad.</p>
+            </div>
+
+            <div class="metrics">
+              <div>
+                <span>Costo insumos</span>
+                <strong id="ingredientCost">S/ 0.00</strong>
+              </div>
+              <div>
+                <span>Costo total</span>
+                <strong id="totalCost">S/ 0.00</strong>
+              </div>
+              <div>
+                <span>Venta total</span>
+                <strong id="saleTotal">S/ 0.00</strong>
+              </div>
+              <div>
+                <span>Ganancia estimada</span>
+                <strong id="profitTotal">S/ 0.00</strong>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="sheet-zone" aria-label="Lista interna de insumos">
+          <div class="sheet-config">
+            <div class="section-title">
+              <div>
+                <p class="eyebrow">Costos</p>
+                <h2>Lista interna de insumos</h2>
+              </div>
+            </div>
+
+            <p class="helper-text" id="costSource">
+              Los costos se cargan automaticamente desde la fuente configurada en el proyecto.
+            </p>
+
+            <div class="actions">
+              <button class="primary-button compact" id="viewCostsButton" type="button" aria-expanded="false" aria-controls="costListPanel">Ver lista</button>
+              <button class="secondary-button compact" id="refreshCostsButton" type="button">Actualizar costos</button>
+            </div>
+
+            <p class="helper-text">
+              La persona que use la web no necesita subir ni pegar ningun Google Sheet. Para cambiar la fuente, se edita el archivo de configuracion del proyecto.
+            </p>
+          </div>
+
+          <div class="table-wrap hidden" id="costListPanel">
+            <table>
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th>Precio compra</th>
+                  <th>Contenido</th>
+                  <th>Costo base</th>
+                </tr>
+              </thead>
+              <tbody id="costTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="breakdown-zone" aria-label="Detalle del calculo">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Detalle</p>
+              <h2>Ingredientes detectados</h2>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Linea</th>
+                  <th>Insumo encontrado</th>
+                  <th>Cantidad costeada</th>
+                  <th>Costo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="breakdownBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
