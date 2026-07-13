@@ -11,7 +11,7 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">Panaderia y pasteleria</p>
-          <h1>Calcula cuanto cobrar por cada porcion</h1>
+          <h1>Costeo de recetas</h1>
         </div>
         <div class="status-pill" id="dataStatus">Usando costos de ejemplo</div>
       </header>
@@ -80,8 +80,11 @@
           </div>
 
           <aside class="result-panel" aria-label="Resultado de precio">
-            <div class="visual-panel">
-              <img src="assets/bakery-worktable.png" alt="Mesa de trabajo de pasteleria con ingredientes" />
+            <div class="section-title">
+              <div>
+                <p class="eyebrow">Calculo</p>
+                <h2>Resultados</h2>
+              </div>
             </div>
 
             <div class="price-summary">
@@ -111,44 +114,6 @@
           </aside>
         </section>
 
-        <section class="sheet-zone" aria-label="Lista interna de insumos">
-          <div class="sheet-config">
-            <div class="section-title">
-              <div>
-                <p class="eyebrow">Costos</p>
-                <h2>Lista interna de insumos</h2>
-              </div>
-            </div>
-
-            <p class="helper-text" id="costSource">
-              Los costos se cargan automaticamente desde la fuente configurada en el proyecto.
-            </p>
-
-            <div class="actions">
-              <button class="primary-button compact" id="viewCostsButton" type="button" aria-expanded="false" aria-controls="costListPanel">Ver lista</button>
-              <button class="secondary-button compact" id="refreshCostsButton" type="button">Actualizar costos</button>
-            </div>
-
-            <p class="helper-text">
-              La persona que use la web no necesita subir ni pegar ningun Google Sheet. Para cambiar la fuente, se edita el archivo de configuracion del proyecto.
-            </p>
-          </div>
-
-          <div class="table-wrap hidden" id="costListPanel">
-            <table>
-              <thead>
-                <tr>
-                  <th>Insumo</th>
-                  <th>Precio compra</th>
-                  <th>Contenido</th>
-                  <th>Costo base</th>
-                </tr>
-              </thead>
-              <tbody id="costTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-
         <section class="breakdown-zone" aria-label="Detalle del calculo">
           <div class="section-title">
             <div>
@@ -169,6 +134,37 @@
                 </tr>
               </thead>
               <tbody id="breakdownBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="sheet-zone" aria-label="Lista interna de insumos">
+          <div class="sheet-config">
+            <div>
+              <p class="eyebrow">Costos</p>
+              <h2>Lista interna de insumos</h2>
+              <p class="helper-text" id="costSource">
+                Los costos se cargan automaticamente desde la fuente configurada en el proyecto.
+              </p>
+            </div>
+
+            <div class="actions">
+              <button class="secondary-button compact" id="viewCostsButton" type="button" aria-expanded="false" aria-controls="costListPanel">Ver lista</button>
+              <button class="secondary-button compact" id="refreshCostsButton" type="button">Actualizar costos</button>
+            </div>
+          </div>
+
+          <div class="table-wrap hidden" id="costListPanel">
+            <table>
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th>Precio compra</th>
+                  <th>Contenido</th>
+                  <th>Costo base</th>
+                </tr>
+              </thead>
+              <tbody id="costTableBody"></tbody>
             </table>
           </div>
         </section>
