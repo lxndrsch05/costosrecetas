@@ -49,6 +49,25 @@ window.RECIPE_COSTING_CONFIG = {
 
 Tambien puedes pegar una URL publica normal de Google Sheets; la app intentara convertirla a CSV automaticamente.
 
+## Backend para agregar insumos
+
+Para que el boton `Agregar insumo` escriba en Google Sheets, usa el backend de Apps Script incluido en:
+
+```text
+backend/google-apps-script/Code.gs
+```
+
+Luego pega la URL del Web App en `config.js`:
+
+```js
+window.RECIPE_COSTING_CONFIG = {
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/ID/export?format=csv&gid=0",
+  appsScriptUrl: "https://script.google.com/macros/s/ID_DEL_DEPLOYMENT/exec",
+};
+```
+
+Si `appsScriptUrl` esta vacio, los insumos agregados se guardan solo en el navegador.
+
 ## Notas importantes
 
 - Si tu hoja es privada, se necesita una segunda etapa con backend, OAuth de Google o Apps Script.

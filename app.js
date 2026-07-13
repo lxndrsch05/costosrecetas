@@ -369,7 +369,7 @@ function closeIngredientDrawer() {
   elements.ingredientDrawer.setAttribute("aria-hidden", "true");
 }
 
-function addCustomIngredient(event) {
+async function addCustomIngredient(event) {
   event.preventDefault();
 
   const item = createCostItem({
@@ -385,6 +385,8 @@ function addCustomIngredient(event) {
     return;
   }
 
+  const backendResult = await syncIngredientToBackend(item);
+
   state.customCosts = state.customCosts.filter((cost) => cost.normalizedName !== item.normalizedName);
   state.customCosts.push(item);
   saveCustomCosts();
@@ -397,7 +399,44 @@ function addCustomIngredient(event) {
 
   closeIngredientDrawer();
   resetCalculation();
-  setStatus(`Insumo agregado: ${item.name}`, "ok");
+  setStatus(backendResult.message || `Insumo agregado: ${item.name}`, backendResult.type || "ok");
+}
+
+async function syncIngredientToBackend(item) {
+  const appsScriptUrl = String(appConfig.appsScriptUrl || "").trim();
+
+  if (!appsScriptUrl) {
+    return {
+      type: "warn",
+      message: `Insumo agregado localmente: ${item.name}`,
+    };
+  }
+
+  try {
+    await fetch(appsScriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify({
+        insumo: item.name,
+        precio: item.price,
+        cantidad: item.packageQuantity,
+        unidad: item.packageUnit,
+      }),
+    });
+
+    return {
+      type: "ok",
+      message: `Insumo enviado al Google Sheet: ${item.name}`,
+    };
+  } catch {
+    return {
+      type: "warn",
+      message: `No se pudo enviar al Sheet. Guardado localmente: ${item.name}`,
+    };
+  }
 }
 
 function calculate() {
