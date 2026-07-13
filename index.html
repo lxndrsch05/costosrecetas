@@ -29,13 +29,18 @@
               </button>
             </div>
 
-            <label for="recipeText">Ingredientes</label>
+            <label for="recipeText">Copia o pega la receta aqui</label>
             <textarea id="recipeText" spellcheck="false" placeholder="Ejemplo:
 500 g harina
 250 g azucar
 4 huevos
 200 g mantequilla
 1 cdta vainilla"></textarea>
+
+            <div class="error-alert hidden" id="ingredientAlert" role="alert" aria-live="assertive">
+              <strong>Hay insumos que no estan en la lista.</strong>
+              <p id="ingredientAlertText">Revisa la receta o agrega esos insumos a la lista interna.</p>
+            </div>
 
             <div class="settings-grid">
               <label>

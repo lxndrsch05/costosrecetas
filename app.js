@@ -46,6 +46,8 @@ const elements = {
   refreshCostsButton: document.querySelector("#refreshCostsButton"),
   costListPanel: document.querySelector("#costListPanel"),
   costSource: document.querySelector("#costSource"),
+  ingredientAlert: document.querySelector("#ingredientAlert"),
+  ingredientAlertText: document.querySelector("#ingredientAlertText"),
   costTableBody: document.querySelector("#costTableBody"),
   breakdownBody: document.querySelector("#breakdownBody"),
   unitPrice: document.querySelector("#unitPrice"),
@@ -293,6 +295,7 @@ function calculate() {
 
   renderBreakdown(rows);
   renderSummary(state.lastResult);
+  renderIngredientAlert(rows);
 }
 
 function parseRecipeLine(line) {
@@ -440,6 +443,27 @@ function renderSummary(result) {
   elements.priceNote.textContent = missing
     ? `${missing} linea(s) necesitan revision. El precio se calculo con los ingredientes encontrados.`
     : `Para ${result.servings} porcion(es), con margen y gastos incluidos.`;
+}
+
+function renderIngredientAlert(rows) {
+  const missingRows = rows.filter((row) => row.status === "Insumo no encontrado");
+  const hasMissingRows = missingRows.length > 0;
+
+  elements.ingredientAlert.classList.toggle("hidden", !hasMissingRows);
+
+  if (!hasMissingRows) {
+    elements.ingredientAlertText.textContent = "Revisa la receta o agrega esos insumos a la lista interna.";
+    return;
+  }
+
+  const missingNames = missingRows
+    .map((row) => row.ingredientName || row.original)
+    .filter(Boolean)
+    .slice(0, 4);
+  const extraCount = Math.max(0, missingRows.length - missingNames.length);
+  const extraText = extraCount ? ` y ${extraCount} mas` : "";
+
+  elements.ingredientAlertText.textContent = `No encontre en la lista: ${missingNames.join(", ")}${extraText}. Agrega el insumo o ajusta el nombre en la receta.`;
 }
 
 function renderCostTable() {

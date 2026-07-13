@@ -170,6 +170,25 @@ textarea {
   line-height: 1.55;
 }
 
+.error-alert {
+  border: 1px solid #f0b5a9;
+  border-radius: 8px;
+  background: #ffe2dc;
+  color: #862b1c;
+  margin-top: 14px;
+  padding: 13px 14px;
+}
+
+.error-alert strong {
+  display: block;
+  font-size: 0.94rem;
+}
+
+.error-alert p {
+  margin: 5px 0 0;
+  line-height: 1.45;
+}
+
 input,
 select {
   min-height: 44px;
