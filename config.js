@@ -4,5 +4,5 @@ window.RECIPE_COSTING_CONFIG = {
   sheetCsvUrl: "",
   // Pega aqui la URL del Web App de Google Apps Script para agregar insumos al Sheet.
   // Ejemplo: "https://script.google.com/macros/s/ID_DEL_DEPLOYMENT/exec"
-  appsScriptUrl: "",
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycbyRAA3dt1BhA40xV9m-LBhWEZFEMSxAF1ItWD6c_eWVO8wvPteVel36bCLejlNNWKZI/exec",
 };
