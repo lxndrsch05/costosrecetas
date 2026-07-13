@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Precio Justo | Calculadora de recetas</title>
-    <link rel="stylesheet" href="styles.css?v=clean-layout-20260713" />
+    <link rel="stylesheet" href="styles.css?v=add-ingredient-20260713" />
   </head>
   <body>
     <div class="app-shell">
@@ -152,6 +152,7 @@
             </div>
 
             <div class="actions">
+              <button class="primary-button compact" id="addIngredientButton" type="button">Agregar insumo</button>
               <button class="secondary-button compact" id="viewCostsButton" type="button" aria-expanded="false" aria-controls="costListPanel">Ver lista</button>
               <button class="secondary-button compact" id="refreshCostsButton" type="button">Actualizar costos</button>
             </div>
@@ -174,7 +175,58 @@
       </main>
     </div>
 
-    <script src="config.js?v=clean-layout-20260713"></script>
-    <script src="app.js?v=clean-layout-20260713"></script>
+    <div class="drawer-backdrop hidden" id="ingredientDrawer" aria-hidden="true">
+      <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ingredientDrawerTitle">
+        <div class="drawer-header">
+          <div>
+            <p class="eyebrow">Nuevo insumo</p>
+            <h2 id="ingredientDrawerTitle">Agregar insumo</h2>
+          </div>
+          <button class="icon-button" id="closeIngredientDrawerButton" type="button" aria-label="Cerrar formulario">×</button>
+        </div>
+
+        <form id="ingredientForm" class="drawer-form">
+          <label>
+            Nombre del insumo
+            <input id="newIngredientName" type="text" autocomplete="off" required placeholder="Ejemplo: Pistacho" />
+          </label>
+
+          <label>
+            Precio
+            <input id="newIngredientPrice" type="number" min="0" step="0.01" required placeholder="Ejemplo: 18.50" />
+          </label>
+
+          <div class="drawer-grid">
+            <label>
+              Cantidad comprada
+              <input id="newIngredientQuantity" type="number" min="0" step="0.01" required placeholder="Ejemplo: 500" />
+            </label>
+
+            <label>
+              Unidad
+              <select id="newIngredientUnit" required>
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="ml">ml</option>
+                <option value="l">l</option>
+                <option value="unidad">unidad</option>
+              </select>
+            </label>
+          </div>
+
+          <p class="drawer-note">
+            El insumo se guardara en esta web y aparecera en la lista interna de insumos.
+          </p>
+
+          <div class="drawer-actions">
+            <button class="secondary-button" id="cancelIngredientButton" type="button">Cancelar</button>
+            <button class="primary-button" type="submit">Guardar insumo</button>
+          </div>
+        </form>
+      </aside>
+    </div>
+
+    <script src="config.js?v=add-ingredient-20260713"></script>
+    <script src="app.js?v=add-ingredient-20260713"></script>
   </body>
 </html>

@@ -23,9 +23,12 @@ const sampleRecipe = `500 g harina
 
 const appConfig = window.RECIPE_COSTING_CONFIG || {};
 const fallbackCostsUrl = "costos-ejemplo.csv";
+const customCostsStorageKey = "recipeCosting.customIngredients";
 
 const state = {
   costs: [],
+  sourceCosts: [],
+  customCosts: [],
   lastResult: null,
   costsVisible: false,
 };
@@ -42,6 +45,7 @@ const elements = {
   calculateButton: document.querySelector("#calculateButton"),
   copyButton: document.querySelector("#copyButton"),
   sampleRecipeButton: document.querySelector("#sampleRecipeButton"),
+  addIngredientButton: document.querySelector("#addIngredientButton"),
   viewCostsButton: document.querySelector("#viewCostsButton"),
   refreshCostsButton: document.querySelector("#refreshCostsButton"),
   costListPanel: document.querySelector("#costListPanel"),
@@ -56,6 +60,14 @@ const elements = {
   totalCost: document.querySelector("#totalCost"),
   saleTotal: document.querySelector("#saleTotal"),
   profitTotal: document.querySelector("#profitTotal"),
+  ingredientDrawer: document.querySelector("#ingredientDrawer"),
+  closeIngredientDrawerButton: document.querySelector("#closeIngredientDrawerButton"),
+  cancelIngredientButton: document.querySelector("#cancelIngredientButton"),
+  ingredientForm: document.querySelector("#ingredientForm"),
+  newIngredientName: document.querySelector("#newIngredientName"),
+  newIngredientPrice: document.querySelector("#newIngredientPrice"),
+  newIngredientQuantity: document.querySelector("#newIngredientQuantity"),
+  newIngredientUnit: document.querySelector("#newIngredientUnit"),
 };
 
 const unitAliases = new Map([
@@ -140,6 +152,20 @@ elements.sampleRecipeButton.addEventListener("click", () => {
 elements.refreshCostsButton.addEventListener("click", loadInternalCosts);
 elements.viewCostsButton.addEventListener("click", toggleCostList);
 elements.copyButton.addEventListener("click", copySummary);
+elements.addIngredientButton.addEventListener("click", openIngredientDrawer);
+elements.closeIngredientDrawerButton.addEventListener("click", closeIngredientDrawer);
+elements.cancelIngredientButton.addEventListener("click", closeIngredientDrawer);
+elements.ingredientForm.addEventListener("submit", addCustomIngredient);
+elements.ingredientDrawer.addEventListener("click", (event) => {
+  if (event.target === elements.ingredientDrawer) {
+    closeIngredientDrawer();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !elements.ingredientDrawer.classList.contains("hidden")) {
+    closeIngredientDrawer();
+  }
+});
 
 [
   elements.servingsInput,
@@ -220,16 +246,18 @@ function loadCostsFromCsv(csv, statusText) {
     throw new Error("Faltan columnas: insumo, precio, cantidad y unidad");
   }
 
-  state.costs = rows
+  state.sourceCosts = rows
     .slice(1)
     .map((row) => parseCostRow(row, column))
     .filter(Boolean)
     .sort((a, b) => b.tokens.length - a.tokens.length);
 
-  if (!state.costs.length) {
+  if (!state.sourceCosts.length) {
     throw new Error("No se encontraron insumos validos");
   }
 
+  state.customCosts = loadCustomCosts();
+  mergeCostLists();
   setStatus(statusText, "ok");
   renderCostTable();
 }
@@ -258,6 +286,118 @@ function parseCostRow(row, column) {
     group: unit.group,
     unitCost: price / normalizedQuantity,
   };
+}
+
+function mergeCostLists() {
+  const byName = new Map();
+
+  [...state.sourceCosts, ...state.customCosts].forEach((item) => {
+    byName.set(item.normalizedName, item);
+  });
+
+  state.costs = [...byName.values()].sort((a, b) => b.tokens.length - a.tokens.length);
+}
+
+function loadCustomCosts() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(customCostsStorageKey) || "[]");
+    if (!Array.isArray(saved)) return [];
+
+    return saved
+      .map((item) =>
+        createCostItem({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          unitText: item.unit,
+          isCustom: true,
+        }),
+      )
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomCosts() {
+  const payload = state.customCosts.map((item) => ({
+    name: item.name,
+    price: item.price,
+    quantity: item.packageQuantity,
+    unit: item.packageUnit,
+  }));
+  localStorage.setItem(customCostsStorageKey, JSON.stringify(payload));
+}
+
+function createCostItem({ name, price, quantity, unitText, isCustom = false }) {
+  const cleanName = String(name || "").trim();
+  const cleanUnit = String(unitText || "").trim();
+  const parsedPrice = parseNumber(price);
+  const parsedQuantity = parseNumber(quantity);
+  const unit = normalizeUnit(cleanUnit);
+
+  if (!cleanName || !parsedPrice || !parsedQuantity || !unit) {
+    return null;
+  }
+
+  const normalizedQuantity = parsedQuantity * unit.factor;
+  return {
+    name: cleanName,
+    normalizedName: normalizeText(cleanName),
+    tokens: tokenize(cleanName),
+    price: parsedPrice,
+    packageQuantity: parsedQuantity,
+    packageUnit: cleanUnit,
+    baseQuantity: normalizedQuantity,
+    baseUnit: unit.unit,
+    group: unit.group,
+    unitCost: parsedPrice / normalizedQuantity,
+    isCustom,
+  };
+}
+
+function openIngredientDrawer() {
+  elements.ingredientForm.reset();
+  elements.newIngredientUnit.value = "g";
+  elements.ingredientDrawer.classList.remove("hidden");
+  elements.ingredientDrawer.setAttribute("aria-hidden", "false");
+  elements.newIngredientName.focus();
+}
+
+function closeIngredientDrawer() {
+  elements.ingredientDrawer.classList.add("hidden");
+  elements.ingredientDrawer.setAttribute("aria-hidden", "true");
+}
+
+function addCustomIngredient(event) {
+  event.preventDefault();
+
+  const item = createCostItem({
+    name: elements.newIngredientName.value,
+    price: elements.newIngredientPrice.value,
+    quantity: elements.newIngredientQuantity.value,
+    unitText: elements.newIngredientUnit.value,
+    isCustom: true,
+  });
+
+  if (!item) {
+    setStatus("Completa los datos del insumo", "danger");
+    return;
+  }
+
+  state.customCosts = state.customCosts.filter((cost) => cost.normalizedName !== item.normalizedName);
+  state.customCosts.push(item);
+  saveCustomCosts();
+  mergeCostLists();
+  renderCostTable();
+
+  if (!state.costsVisible) {
+    toggleCostList();
+  }
+
+  closeIngredientDrawer();
+  resetCalculation();
+  setStatus(`Insumo agregado: ${item.name}`, "ok");
 }
 
 function calculate() {
