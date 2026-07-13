@@ -128,15 +128,14 @@ const stopWords = new Set([
 ]);
 
 document.addEventListener("DOMContentLoaded", async () => {
-  elements.recipeText.value = sampleRecipe;
   await loadInternalCosts();
-  calculate();
+  resetCalculation();
 });
 
 elements.calculateButton.addEventListener("click", calculate);
 elements.sampleRecipeButton.addEventListener("click", () => {
   elements.recipeText.value = sampleRecipe;
-  calculate();
+  resetCalculation();
 });
 elements.refreshCostsButton.addEventListener("click", loadInternalCosts);
 elements.viewCostsButton.addEventListener("click", toggleCostList);
@@ -149,9 +148,9 @@ elements.copyButton.addEventListener("click", copySummary);
   elements.laborInput,
   elements.overheadInput,
   elements.roundingInput,
-].forEach((input) => input.addEventListener("input", calculate));
+].forEach((input) => input.addEventListener("input", resetCalculation));
 
-elements.recipeText.addEventListener("input", debounce(calculate, 250));
+elements.recipeText.addEventListener("input", resetCalculation);
 
 async function loadInternalCosts() {
   const configuredUrl = String(appConfig.sheetCsvUrl || "").trim();
@@ -170,7 +169,7 @@ async function loadInternalCosts() {
     elements.costSource.textContent = "No se pudo leer la fuente interna; se estan usando costos de respaldo.";
   }
 
-  calculate();
+  resetCalculation();
 }
 
 async function fetchCostsCsv(sourceUrl) {
@@ -267,6 +266,15 @@ function calculate() {
     .map((line) => line.trim())
     .filter(Boolean);
 
+  if (!recipeLines.length) {
+    resetCalculation();
+    showIngredientAlert(
+      "Falta ingresar la receta.",
+      "Copia o pega los ingredientes en el campo de receta y luego vuelve a hacer clic en calcular.",
+    );
+    return;
+  }
+
   const rows = recipeLines.map(parseRecipeLine).map(costRecipeItem);
   const ingredientCost = rows.reduce((sum, row) => sum + row.cost, 0);
   const servings = clamp(parseNumber(elements.servingsInput.value) || 1, 1, 100000);
@@ -296,6 +304,21 @@ function calculate() {
   renderBreakdown(rows);
   renderSummary(state.lastResult);
   renderIngredientAlert(rows);
+}
+
+function resetCalculation() {
+  state.lastResult = null;
+  renderBreakdown([]);
+  renderSummary({
+    rows: [],
+    ingredientCost: 0,
+    costBeforeMargin: 0,
+    saleTotal: 0,
+    profit: 0,
+    servings: clamp(parseNumber(elements.servingsInput.value) || 1, 1, 100000),
+    roundedUnitPrice: 0,
+  });
+  hideIngredientAlert();
 }
 
 function parseRecipeLine(line) {
@@ -439,6 +462,11 @@ function renderSummary(result) {
   elements.saleTotal.textContent = formatMoney(result.saleTotal);
   elements.profitTotal.textContent = formatMoney(result.profit);
 
+  if (!result.rows.length) {
+    elements.priceNote.textContent = "Copia o pega una receta y haz clic en calcular para ver el precio recomendado.";
+    return;
+  }
+
   const missing = result.rows.filter((row) => row.status !== "OK" && row.status !== "Calculado con equivalencia").length;
   elements.priceNote.textContent = missing
     ? `${missing} linea(s) necesitan revision. El precio se calculo con los ingredientes encontrados.`
@@ -449,10 +477,8 @@ function renderIngredientAlert(rows) {
   const missingRows = rows.filter((row) => row.status === "Insumo no encontrado");
   const hasMissingRows = missingRows.length > 0;
 
-  elements.ingredientAlert.classList.toggle("hidden", !hasMissingRows);
-
   if (!hasMissingRows) {
-    elements.ingredientAlertText.textContent = "Revisa la receta o agrega esos insumos a la lista interna.";
+    hideIngredientAlert();
     return;
   }
 
@@ -463,7 +489,22 @@ function renderIngredientAlert(rows) {
   const extraCount = Math.max(0, missingRows.length - missingNames.length);
   const extraText = extraCount ? ` y ${extraCount} mas` : "";
 
-  elements.ingredientAlertText.textContent = `No encontre en la lista: ${missingNames.join(", ")}${extraText}. Agrega el insumo o ajusta el nombre en la receta.`;
+  showIngredientAlert(
+    "Hay insumos que no estan en la lista.",
+    `No encontre en la lista: ${missingNames.join(", ")}${extraText}. Agrega el insumo o ajusta el nombre en la receta.`,
+  );
+}
+
+function showIngredientAlert(title, message) {
+  elements.ingredientAlert.classList.remove("hidden");
+  elements.ingredientAlert.querySelector("strong").textContent = title;
+  elements.ingredientAlertText.textContent = message;
+}
+
+function hideIngredientAlert() {
+  elements.ingredientAlert.classList.add("hidden");
+  elements.ingredientAlert.querySelector("strong").textContent = "Hay insumos que no estan en la lista.";
+  elements.ingredientAlertText.textContent = "Revisa la receta o agrega esos insumos a la lista interna.";
 }
 
 function renderCostTable() {
