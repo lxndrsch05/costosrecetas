@@ -16,6 +16,8 @@ Web local para pegar una receta, cargar internamente costos de insumos desde Goo
 5. Los costos se cargan automaticamente desde la fuente interna configurada.
 6. Usa el boton `Ver lista` para revisar los insumos cargados.
 
+Si alguna linea no se puede costear, la app muestra una alerta y no genera precio hasta que el insumo se corrija o se agregue a la lista interna. Esto evita calcular recetas con ingredientes en S/ 0.00.
+
 ## Formato recomendado para Google Sheets
 
 La primera fila debe tener estos encabezados:
@@ -73,3 +75,12 @@ Si `appsScriptUrl` esta vacio, los insumos agregados se guardan solo en el naveg
 - Si tu hoja es privada, se necesita una segunda etapa con backend, OAuth de Google o Apps Script.
 - Las unidades compatibles incluyen `g`, `kg`, `ml`, `l`, `taza`, `cda`, `cdta` y `unidad`.
 - Algunas equivalencias de tazas o cucharadas a gramos son estimadas y se marcan en el detalle.
+- Si un nombre puede referirse a varios insumos, por ejemplo `azucar` cuando existen varios tipos, la app lo marca como ambiguo para evitar un costo incorrecto.
+
+## Pruebas
+
+Para revisar la logica de costeo:
+
+```bash
+node tests/costing-regression.test.js
+```

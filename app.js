@@ -14,10 +14,10 @@ Sal,2.00,1,kg
 Aceite vegetal,8.50,1,l`;
 
 const sampleRecipe = `500 g harina
-250 g azucar
+250 g azucar blanca
 4 huevos
 200 g mantequilla
-120 ml leche
+120 ml leche fresca
 1 cdta vainilla
 10 g polvo de hornear`;
 
@@ -526,6 +526,24 @@ function calculate() {
   }
 
   const rows = recipeLines.map(parseRecipeLine).map(costRecipeItem);
+  const blockingRows = rows.filter((row) => !isCostedRow(row));
+
+  if (blockingRows.length) {
+    state.lastResult = null;
+    renderBreakdown(rows);
+    renderSummary({
+      rows,
+      ingredientCost: 0,
+      costBeforeMargin: 0,
+      saleTotal: 0,
+      profit: 0,
+      servings: clamp(parseNumber(elements.servingsInput.value) || 1, 1, 100000),
+      roundedUnitPrice: 0,
+    });
+    renderIngredientAlert(rows);
+    return;
+  }
+
   const ingredientCost = rows.reduce((sum, row) => sum + row.cost, 0);
   const servings = clamp(parseNumber(elements.servingsInput.value) || 1, 1, 100000);
   const margin = clamp(parseNumber(elements.marginInput.value) || 0, 0, 95) / 100;
@@ -620,9 +638,10 @@ function costRecipeItem(item) {
     return { ...item, cost: 0, status: item.parseError || "Cantidad invalida" };
   }
 
-  const costItem = findBestCostItem(item.ingredientName);
+  const match = findBestCostItem(item.ingredientName);
+  const costItem = match.item;
   if (!costItem) {
-    return { ...item, cost: 0, status: "Insumo no encontrado" };
+    return { ...item, cost: 0, status: match.status || "Insumo no encontrado" };
   }
 
   const converted = convertAmount(item.quantity, item.unitText, item.ingredientName, costItem);
@@ -680,11 +699,32 @@ function findBestCostItem(name) {
   let best = null;
   let bestScore = 0;
 
-  for (const item of state.costs) {
-    if (normalized.includes(item.normalizedName) || item.normalizedName.includes(normalized)) {
-      return item;
-    }
+  if (!normalized) {
+    return { item: null, status: "Insumo no encontrado" };
+  }
 
+  const exact = state.costs.find((item) => item.normalizedName === normalized);
+  if (exact) {
+    return { item: exact };
+  }
+
+  const recipeContainsCost = state.costs.filter((item) => normalized.includes(item.normalizedName));
+  if (recipeContainsCost.length === 1) {
+    return { item: recipeContainsCost[0] };
+  }
+  if (recipeContainsCost.length > 1) {
+    return { item: null, status: "Insumo ambiguo" };
+  }
+
+  const costContainsRecipe = state.costs.filter((item) => item.normalizedName.includes(normalized));
+  if (costContainsRecipe.length === 1) {
+    return { item: costContainsRecipe[0] };
+  }
+  if (costContainsRecipe.length > 1) {
+    return { item: null, status: "Insumo ambiguo" };
+  }
+
+  for (const item of state.costs) {
     const overlap = item.tokens.filter((token) => tokens.includes(token)).length;
     const score = overlap / Math.max(item.tokens.length, tokens.length, 1);
     if (score > bestScore) {
@@ -693,7 +733,11 @@ function findBestCostItem(name) {
     }
   }
 
-  return bestScore >= 0.34 ? best : null;
+  return bestScore >= 0.67 ? { item: best } : { item: null, status: "Insumo no encontrado" };
+}
+
+function isCostedRow(row) {
+  return row.status === "OK" || row.status === "Calculado con equivalencia";
 }
 
 function getDensity(name) {
@@ -717,14 +761,14 @@ function renderSummary(result) {
     return;
   }
 
-  const missing = result.rows.filter((row) => row.status !== "OK" && row.status !== "Calculado con equivalencia").length;
+  const missing = result.rows.filter((row) => !isCostedRow(row)).length;
   elements.priceNote.textContent = missing
-    ? `${missing} linea(s) necesitan revision. El precio se calculo con los ingredientes encontrados.`
-    : `Para ${result.servings} porcion(es), con margen y gastos incluidos.`;
+    ? `${missing} linea(s) necesitan revision. Corrige esos insumos para calcular un precio confiable.`
+    : `Para ${result.servings} porcion(es), con margen sobre venta y gastos incluidos.`;
 }
 
 function renderIngredientAlert(rows) {
-  const missingRows = rows.filter((row) => row.status === "Insumo no encontrado");
+  const missingRows = rows.filter((row) => !isCostedRow(row));
   const hasMissingRows = missingRows.length > 0;
 
   if (!hasMissingRows) {
@@ -733,15 +777,15 @@ function renderIngredientAlert(rows) {
   }
 
   const missingNames = missingRows
-    .map((row) => row.ingredientName || row.original)
+    .map((row) => `${row.ingredientName || row.original} (${row.status})`)
     .filter(Boolean)
     .slice(0, 4);
   const extraCount = Math.max(0, missingRows.length - missingNames.length);
   const extraText = extraCount ? ` y ${extraCount} mas` : "";
 
   showIngredientAlert(
-    "Hay insumos que no estan en la lista.",
-    `No encontre en la lista: ${missingNames.join(", ")}${extraText}. Agrega el insumo o ajusta el nombre en la receta.`,
+    "Hay lineas que no se pueden costear.",
+    `Revisa: ${missingNames.join(", ")}${extraText}. Agrega el insumo o ajusta el nombre en la receta.`,
   );
 }
 
