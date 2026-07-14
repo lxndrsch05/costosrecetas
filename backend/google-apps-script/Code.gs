@@ -23,11 +23,23 @@ function doPost(e) {
   }
 }
 
-function doGet() {
-  return json_({
-    ok: true,
-    message: 'Backend de costos activo',
-  });
+function doGet(e) {
+  try {
+    const sheet = getSheet_();
+    ensureHeaders_(sheet);
+
+    return output_(e, {
+      ok: true,
+      message: 'Backend de costos activo',
+      ingredients: listIngredients_(sheet),
+    });
+  } catch (error) {
+    return output_(e, {
+      ok: false,
+      message: error.message,
+      ingredients: [],
+    });
+  }
 }
 
 function parsePayload_(e) {
@@ -88,6 +100,28 @@ function upsertIngredient_(sheet, row) {
   sheet.appendRow([row.insumo, row.precio, row.cantidad, row.unidad]);
 }
 
+function listIngredients_(sheet) {
+  const data = sheet.getDataRange().getValues();
+
+  return data
+    .slice(1)
+    .map(function(row) {
+      if (!row[0] && !row[1] && !row[2] && !row[3]) {
+        return null;
+      }
+
+      return normalizeRow_({
+        insumo: row[0],
+        precio: row[1],
+        cantidad: row[2],
+        unidad: row[3],
+      });
+    })
+    .filter(function(row) {
+      return row && row.insumo && row.precio && row.cantidad && row.unidad;
+    });
+}
+
 function normalize_(value) {
   return String(value || '')
     .toLowerCase()
@@ -100,4 +134,16 @@ function json_(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function output_(e, payload) {
+  const callback = e && e.parameter && e.parameter.callback;
+
+  if (callback && /^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(callback)) {
+    return ContentService
+      .createTextOutput(callback + '(' + JSON.stringify(payload) + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return json_(payload);
 }

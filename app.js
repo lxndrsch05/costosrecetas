@@ -180,16 +180,23 @@ elements.recipeText.addEventListener("input", resetCalculation);
 
 async function loadInternalCosts() {
   const configuredUrl = String(appConfig.sheetCsvUrl || "").trim();
-  const sourceUrl = configuredUrl || fallbackCostsUrl;
+  const appsScriptUrl = String(appConfig.appsScriptUrl || "").trim();
 
   try {
     setStatus("Cargando costos internos...", "warn");
-    const csv = await fetchCostsCsv(sourceUrl);
-    const label = configuredUrl ? "Costos cargados desde Google Sheets" : "Costos cargados desde archivo interno";
-    loadCostsFromCsv(csv, label);
-    elements.costSource.textContent = configuredUrl
-      ? "Los costos se actualizan desde el Google Sheet interno configurado."
-      : "Los costos se cargan desde el archivo interno de ejemplo.";
+    if (configuredUrl) {
+      const csv = await fetchCostsCsv(configuredUrl);
+      loadCostsFromCsv(csv, "Costos cargados desde Google Sheets");
+      elements.costSource.textContent = "Los costos se actualizan desde el Google Sheet interno configurado.";
+    } else if (appsScriptUrl) {
+      const ingredients = await fetchCostsFromAppsScript(appsScriptUrl);
+      loadCostsFromItems(ingredients, "Costos cargados desde Apps Script");
+      elements.costSource.textContent = "Los costos se leen desde la pestaña Insumos del Google Sheet.";
+    } else {
+      const csv = await fetchCostsCsv(fallbackCostsUrl);
+      loadCostsFromCsv(csv, "Costos cargados desde archivo interno");
+      elements.costSource.textContent = "Los costos se cargan desde el archivo interno de ejemplo.";
+    }
   } catch (error) {
     loadCostsFromCsv(defaultCostsCsv, "Usando costos de respaldo");
     elements.costSource.textContent = "No se pudo leer la fuente interna; se estan usando costos de respaldo.";
@@ -204,6 +211,43 @@ async function fetchCostsCsv(sourceUrl) {
     throw new Error(`No se pudo leer la fuente de costos (${response.status})`);
   }
   return response.text();
+}
+
+function fetchCostsFromAppsScript(sourceUrl) {
+  const callbackName = `recipeCostingCosts${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  const separator = sourceUrl.includes("?") ? "&" : "?";
+  const url = `${sourceUrl}${separator}callback=${callbackName}`;
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("No se pudo leer Apps Script"));
+    }, 12000);
+
+    function cleanup() {
+      window.clearTimeout(timeoutId);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = (payload) => {
+      cleanup();
+      if (!payload || payload.ok === false) {
+        reject(new Error(payload?.message || "Apps Script no devolvio insumos"));
+        return;
+      }
+      resolve(payload.ingredients || []);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("No se pudo conectar con Apps Script"));
+    };
+
+    script.src = url;
+    document.head.appendChild(script);
+  });
 }
 
 function toggleCostList() {
@@ -249,6 +293,33 @@ function loadCostsFromCsv(csv, statusText) {
   state.sourceCosts = rows
     .slice(1)
     .map((row) => parseCostRow(row, column))
+    .filter(Boolean)
+    .sort((a, b) => b.tokens.length - a.tokens.length);
+
+  if (!state.sourceCosts.length) {
+    throw new Error("No se encontraron insumos validos");
+  }
+
+  state.customCosts = loadCustomCosts();
+  mergeCostLists();
+  setStatus(statusText, "ok");
+  renderCostTable();
+}
+
+function loadCostsFromItems(items, statusText) {
+  if (!Array.isArray(items) || !items.length) {
+    throw new Error("No se encontraron insumos en Apps Script");
+  }
+
+  state.sourceCosts = items
+    .map((item) =>
+      createCostItem({
+        name: item.insumo || item.name,
+        price: item.precio || item.price,
+        quantity: item.cantidad || item.quantity,
+        unitText: item.unidad || item.unit,
+      }),
+    )
     .filter(Boolean)
     .sort((a, b) => b.tokens.length - a.tokens.length);
 
