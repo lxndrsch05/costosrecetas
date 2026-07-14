@@ -546,14 +546,14 @@ function calculate() {
 
   const ingredientCost = rows.reduce((sum, row) => sum + row.cost, 0);
   const servings = clamp(parseNumber(elements.servingsInput.value) || 1, 1, 100000);
-  const margin = clamp(parseNumber(elements.marginInput.value) || 0, 0, 95) / 100;
+  const profitRate = clamp(parseNumber(elements.marginInput.value) || 0, 0, 1000) / 100;
   const waste = Math.max(0, parseNumber(elements.wasteInput.value) || 0) / 100;
   const labor = Math.max(0, parseNumber(elements.laborInput.value) || 0);
   const overhead = Math.max(0, parseNumber(elements.overheadInput.value) || 0);
   const rounding = parseNumber(elements.roundingInput.value) || 0.5;
 
   const costBeforeMargin = ingredientCost * (1 + waste) + labor + overhead;
-  const rawSaleTotal = margin >= 0.95 ? costBeforeMargin : costBeforeMargin / (1 - margin);
+  const rawSaleTotal = costBeforeMargin * (1 + profitRate);
   const rawUnitPrice = rawSaleTotal / servings;
   const roundedUnitPrice = roundUp(rawUnitPrice, rounding);
   const saleTotal = roundedUnitPrice * servings;
@@ -764,7 +764,7 @@ function renderSummary(result) {
   const missing = result.rows.filter((row) => !isCostedRow(row)).length;
   elements.priceNote.textContent = missing
     ? `${missing} linea(s) necesitan revision. Corrige esos insumos para calcular un precio confiable.`
-    : `Para ${result.servings} porcion(es), con margen sobre venta y gastos incluidos.`;
+    : `Para ${result.servings} porcion(es), con ganancia sobre costo y gastos incluidos.`;
 }
 
 function renderIngredientAlert(rows) {

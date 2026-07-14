@@ -92,6 +92,14 @@ api.calculate();
 assert.ok(api.state.lastResult, "valid sample recipe should calculate a result");
 assert.ok(api.state.lastResult.saleTotal > 0, "valid sample recipe should have a sale total");
 
+api.elements.marginInput.value = "100";
+api.calculate();
+assert.ok(api.state.lastResult, "100 percent profit on cost should calculate a result");
+assert.ok(
+  api.state.lastResult.saleTotal >= api.state.lastResult.costBeforeMargin * 2,
+  "100 percent profit on cost should at least double the total cost after rounding",
+);
+
 api.elements.recipeText.value = "500 g harina\\n250 g azucar\\n200 g chocolate blanco";
 api.calculate();
 assert.equal(api.state.lastResult, null, "invalid recipe must not produce a price");

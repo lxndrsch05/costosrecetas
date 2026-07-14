@@ -12,11 +12,13 @@ Web local para pegar una receta, cargar internamente costos de insumos desde Goo
 
 2. Entra a `http://localhost:8000`.
 3. Pega la receta con una linea por ingrediente.
-4. Ajusta porciones, margen, merma, mano de obra y gastos indirectos.
+4. Ajusta porciones, ganancia sobre costo, merma, mano de obra y gastos indirectos.
 5. Los costos se cargan automaticamente desde la fuente interna configurada.
 6. Usa el boton `Ver lista` para revisar los insumos cargados.
 
 Si alguna linea no se puede costear, la app muestra una alerta y no genera precio hasta que el insumo se corrija o se agregue a la lista interna. Esto evita calcular recetas con ingredientes en S/ 0.00.
+
+La ganancia se calcula sobre el costo total. Por ejemplo, si el costo total es S/ 10 y colocas 100%, la venta sugerida parte de S/ 20 antes del redondeo por porcion.
 
 ## Formato recomendado para Google Sheets
 
