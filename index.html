@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Precio Justo | Calculadora de recetas</title>
-    <link rel="stylesheet" href="styles.css?v=verified-backend-save-20260715" />
+    <link rel="stylesheet" href="styles.css?v=ingredient-crud-20260715" />
   </head>
   <body>
     <div class="app-shell">
@@ -166,6 +166,7 @@
                   <th>Precio compra</th>
                   <th>Contenido</th>
                   <th>Costo base</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="costTableBody"></tbody>
@@ -214,19 +215,19 @@
             </label>
           </div>
 
-          <p class="drawer-note">
+          <p class="drawer-note" id="ingredientDrawerNote">
             Si el backend esta configurado, el insumo se agregara al Google Sheet. Tambien quedara disponible en esta web.
           </p>
 
           <div class="drawer-actions">
             <button class="secondary-button" id="cancelIngredientButton" type="button">Cancelar</button>
-            <button class="primary-button" type="submit">Guardar insumo</button>
+            <button class="primary-button" id="ingredientSubmitButton" type="submit">Guardar insumo</button>
           </div>
         </form>
       </aside>
     </div>
 
-    <script src="config.js?v=verified-backend-save-20260715"></script>
-    <script src="app.js?v=verified-backend-save-20260715"></script>
+    <script src="config.js?v=ingredient-crud-20260715"></script>
+    <script src="app.js?v=ingredient-crud-20260715"></script>
   </body>
 </html>

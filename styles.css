@@ -405,6 +405,36 @@ tbody tr:hover {
   background: rgba(249, 231, 222, 0.35);
 }
 
+.table-actions {
+  display: flex;
+  gap: 8px;
+  min-width: 148px;
+}
+
+.table-action {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.table-action:hover {
+  background: var(--accent-soft);
+}
+
+.danger-action {
+  border-color: #efb6aa;
+  color: var(--danger);
+}
+
+.danger-action:hover {
+  background: var(--danger-soft);
+}
+
 .ok,
 .warn,
 .danger {

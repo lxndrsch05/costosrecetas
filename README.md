@@ -14,7 +14,7 @@ Web local para pegar una receta, cargar internamente costos de insumos desde Goo
 3. Pega la receta con una linea por ingrediente.
 4. Ajusta porciones, ganancia sobre costo, merma, mano de obra y gastos indirectos.
 5. Los costos se cargan automaticamente desde la fuente interna configurada.
-6. Usa el boton `Ver lista` para revisar los insumos cargados.
+6. Usa el boton `Ver lista` para revisar, editar o eliminar los insumos cargados.
 
 Si alguna linea no se puede costear, la app muestra una alerta y no genera precio hasta que el insumo se corrija o se agregue a la lista interna. Esto evita calcular recetas con ingredientes en S/ 0.00.
 
@@ -71,6 +71,8 @@ window.RECIPE_COSTING_CONFIG = {
 ```
 
 Si `appsScriptUrl` esta vacio, los insumos agregados se guardan solo en el navegador.
+
+Con Apps Script configurado, la web puede crear, editar y eliminar insumos en la pestaña `Insumos`. Al crear un insumo, la app bloquea duplicados por nombre.
 
 ## Notas importantes
 

@@ -1,6 +1,6 @@
 # Backend Google Apps Script
 
-Este backend lee y agrega insumos nuevos al Google Sheet usado por la web.
+Este backend lee, agrega, edita y elimina insumos del Google Sheet usado por la web.
 
 ## Preparacion
 
@@ -30,6 +30,16 @@ El backend crea esos encabezados si la hoja esta vacia o si no los encuentra en 
 ## Lectura desde la web
 
 Si `sheetCsvUrl` esta vacio y `appsScriptUrl` esta configurado, la web leera la lista de insumos desde la pestaña `Insumos` usando este backend. Esto permite actualizar el Google Sheet manualmente sin depender del CSV publicado.
+
+## Edicion de insumos
+
+La web envia acciones internas al backend:
+
+- `create`: crea un insumo nuevo y rechaza duplicados.
+- `update`: actualiza un insumo existente.
+- `delete`: elimina un insumo existente.
+
+Despues de cambiar este archivo, debes crear una nueva version de la implementacion en Apps Script para que la URL `/exec` use el codigo actualizado.
 
 ## Nota
 

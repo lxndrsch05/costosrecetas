@@ -31,6 +31,8 @@ const state = {
   customCosts: [],
   lastResult: null,
   costsVisible: false,
+  drawerMode: "create",
+  editingIngredientName: null,
 };
 
 const elements = {
@@ -61,6 +63,9 @@ const elements = {
   saleTotal: document.querySelector("#saleTotal"),
   profitTotal: document.querySelector("#profitTotal"),
   ingredientDrawer: document.querySelector("#ingredientDrawer"),
+  ingredientDrawerTitle: document.querySelector("#ingredientDrawerTitle"),
+  ingredientDrawerNote: document.querySelector("#ingredientDrawerNote"),
+  ingredientSubmitButton: document.querySelector("#ingredientSubmitButton"),
   closeIngredientDrawerButton: document.querySelector("#closeIngredientDrawerButton"),
   cancelIngredientButton: document.querySelector("#cancelIngredientButton"),
   ingredientForm: document.querySelector("#ingredientForm"),
@@ -152,10 +157,11 @@ elements.sampleRecipeButton.addEventListener("click", () => {
 elements.refreshCostsButton.addEventListener("click", loadInternalCosts);
 elements.viewCostsButton.addEventListener("click", toggleCostList);
 elements.copyButton.addEventListener("click", copySummary);
-elements.addIngredientButton.addEventListener("click", openIngredientDrawer);
+elements.addIngredientButton.addEventListener("click", () => openIngredientDrawer());
 elements.closeIngredientDrawerButton.addEventListener("click", closeIngredientDrawer);
 elements.cancelIngredientButton.addEventListener("click", closeIngredientDrawer);
 elements.ingredientForm.addEventListener("submit", addCustomIngredient);
+elements.costTableBody.addEventListener("click", manageCostTableAction);
 elements.ingredientDrawer.addEventListener("click", (event) => {
   if (event.target === elements.ingredientDrawer) {
     closeIngredientDrawer();
@@ -327,7 +333,7 @@ function loadCostsFromItems(items, statusText) {
     throw new Error("No se encontraron insumos validos");
   }
 
-  state.customCosts = loadCustomCosts();
+  state.customCosts = [];
   mergeCostLists();
   setStatus(statusText, "ok");
   renderCostTable();
@@ -427,9 +433,25 @@ function createCostItem({ name, price, quantity, unitText, isCustom = false }) {
   };
 }
 
-function openIngredientDrawer() {
+function openIngredientDrawer(item = null) {
+  state.drawerMode = item ? "edit" : "create";
+  state.editingIngredientName = item ? item.normalizedName : null;
   elements.ingredientForm.reset();
-  elements.newIngredientUnit.value = "g";
+  elements.ingredientDrawerTitle.textContent = item ? "Editar insumo" : "Agregar insumo";
+  elements.ingredientSubmitButton.textContent = item ? "Guardar cambios" : "Guardar insumo";
+  elements.ingredientDrawerNote.textContent = item
+    ? "Los cambios se actualizaran en la pestaña Insumos del Google Sheet."
+    : "El insumo se guardara en la pestaña Insumos del Google Sheet si no existe previamente.";
+
+  if (item) {
+    elements.newIngredientName.value = item.name;
+    elements.newIngredientPrice.value = item.price;
+    elements.newIngredientQuantity.value = item.packageQuantity;
+    setUnitFieldValue(item.packageUnit);
+  } else {
+    setUnitFieldValue("g");
+  }
+
   elements.ingredientDrawer.classList.remove("hidden");
   elements.ingredientDrawer.setAttribute("aria-hidden", "false");
   elements.newIngredientName.focus();
@@ -438,6 +460,60 @@ function openIngredientDrawer() {
 function closeIngredientDrawer() {
   elements.ingredientDrawer.classList.add("hidden");
   elements.ingredientDrawer.setAttribute("aria-hidden", "true");
+  state.drawerMode = "create";
+  state.editingIngredientName = null;
+}
+
+function setUnitFieldValue(unit) {
+  const value = String(unit || "g").trim();
+  const hasOption = [...elements.newIngredientUnit.options].some((option) => option.value === value);
+
+  if (!hasOption) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    elements.newIngredientUnit.appendChild(option);
+  }
+
+  elements.newIngredientUnit.value = value;
+}
+
+function findExistingIngredient(normalizedName, exceptNormalizedName = null) {
+  return state.costs.find(
+    (item) => item.normalizedName === normalizedName && item.normalizedName !== exceptNormalizedName,
+  );
+}
+
+async function manageCostTableAction(event) {
+  const button = event.target.closest("[data-action]");
+  if (!button) return;
+
+  const item = state.costs.find((cost) => cost.normalizedName === button.dataset.name);
+  if (!item) {
+    setStatus("No encontre el insumo seleccionado", "danger");
+    return;
+  }
+
+  if (button.dataset.action === "edit") {
+    openIngredientDrawer(item);
+    return;
+  }
+
+  if (button.dataset.action === "delete") {
+    const confirmed = window.confirm(`Eliminar "${item.name}" de Google Sheets?`);
+    if (!confirmed) return;
+
+    button.disabled = true;
+    const backendResult = await deleteIngredient(item);
+    if (backendResult.type !== "ok") {
+      button.disabled = false;
+      setStatus(backendResult.message, backendResult.type || "warn");
+      return;
+    }
+
+    await loadInternalCosts();
+    setStatus(backendResult.message, "ok");
+  }
 }
 
 async function addCustomIngredient(event) {
@@ -456,30 +532,104 @@ async function addCustomIngredient(event) {
     return;
   }
 
-  const backendResult = await syncIngredientToBackend(item);
+  const existing = findExistingIngredient(item.normalizedName, state.editingIngredientName);
+  if (existing) {
+    setStatus(`El insumo ya existe: ${existing.name}`, "danger");
+    return;
+  }
 
-  state.customCosts = state.customCosts.filter((cost) => cost.normalizedName !== item.normalizedName);
-  state.customCosts.push(item);
-  saveCustomCosts();
-  mergeCostLists();
-  renderCostTable();
+  const action = state.drawerMode === "edit" ? "update" : "create";
+  const backendResult = await syncIngredientToBackend(action, item, state.editingIngredientName);
 
-  if (!state.costsVisible) {
-    toggleCostList();
+  if (backendResult.type !== "ok") {
+    setStatus(backendResult.message, backendResult.type || "warn");
+    return;
   }
 
   closeIngredientDrawer();
-  resetCalculation();
-  setStatus(backendResult.message || `Insumo agregado: ${item.name}`, backendResult.type || "ok");
+  await loadInternalCosts();
+  if (!state.costsVisible) {
+    toggleCostList();
+  }
+  setStatus(backendResult.message, "ok");
 }
 
-async function syncIngredientToBackend(item) {
+async function syncIngredientToBackend(action, item, originalName = null) {
   const appsScriptUrl = String(appConfig.appsScriptUrl || "").trim();
 
   if (!appsScriptUrl) {
     return {
-      type: "warn",
-      message: `Insumo agregado localmente: ${item.name}`,
+      type: "danger",
+      message: "No hay backend configurado. No se pudo actualizar Google Sheets.",
+    };
+  }
+
+  try {
+    const currentIngredients = await fetchCostsFromAppsScript(appsScriptUrl);
+    const backendDuplicate = currentIngredients.some((ingredient) => {
+      const normalized = normalizeText(ingredient.insumo);
+      return normalized === item.normalizedName && normalized !== originalName;
+    });
+
+    if (backendDuplicate) {
+      return {
+        type: "danger",
+        message: `El insumo ya existe en Google Sheets: ${item.name}`,
+      };
+    }
+
+    await fetch(appsScriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify({
+        action,
+        originalInsumo: originalName,
+        insumo: item.name,
+        precio: item.price,
+        cantidad: item.packageQuantity,
+        unidad: item.packageUnit,
+      }),
+    });
+
+    await wait(1200);
+    const backendIngredients = await fetchCostsFromAppsScript(appsScriptUrl);
+    const backendNames = backendIngredients.map((ingredient) => normalizeText(ingredient.insumo));
+    const wasSaved = backendNames.includes(item.normalizedName);
+    const oldNameStillExists = Boolean(
+      originalName && originalName !== item.normalizedName && backendNames.includes(originalName),
+    );
+
+    if (!wasSaved || oldNameStillExists) {
+      return {
+        type: "warn",
+        message: `No pude confirmar el cambio en el Sheet: ${item.name}`,
+      };
+    }
+
+    return {
+      type: "ok",
+      message: action === "edit" || action === "update"
+        ? `Insumo actualizado en Google Sheets: ${item.name}`
+        : `Insumo guardado en Google Sheets: ${item.name}`,
+    };
+  } catch {
+    return {
+      type: "danger",
+      message: "Apps Script no esta disponible. No se pudo actualizar Google Sheets.",
+    };
+  }
+}
+
+async function deleteIngredient(item) {
+  const appsScriptUrl = String(appConfig.appsScriptUrl || "").trim();
+
+  if (!appsScriptUrl) {
+    return {
+      type: "danger",
+      message: "No hay backend configurado. No se pudo eliminar en Google Sheets.",
     };
   }
 
@@ -493,32 +643,31 @@ async function syncIngredientToBackend(item) {
         "Content-Type": "text/plain;charset=utf-8",
       },
       body: JSON.stringify({
+        action: "delete",
+        originalInsumo: item.normalizedName,
         insumo: item.name,
-        precio: item.price,
-        cantidad: item.packageQuantity,
-        unidad: item.packageUnit,
       }),
     });
 
     await wait(1200);
     const backendIngredients = await fetchCostsFromAppsScript(appsScriptUrl);
-    const wasSaved = backendIngredients.some((ingredient) => normalizeText(ingredient.insumo) === item.normalizedName);
+    const stillExists = backendIngredients.some((ingredient) => normalizeText(ingredient.insumo) === item.normalizedName);
 
-    if (!wasSaved) {
+    if (stillExists) {
       return {
         type: "warn",
-        message: `No pude confirmar el guardado en el Sheet. Guardado localmente: ${item.name}`,
+        message: `No pude confirmar la eliminacion en el Sheet: ${item.name}`,
       };
     }
 
     return {
       type: "ok",
-      message: `Insumo guardado en el Google Sheet: ${item.name}`,
+      message: `Insumo eliminado de Google Sheets: ${item.name}`,
     };
   } catch {
     return {
-      type: "warn",
-      message: `Apps Script no esta disponible publicamente. Guardado localmente: ${item.name}`,
+      type: "danger",
+      message: "Apps Script no esta disponible. No se pudo eliminar en Google Sheets.",
     };
   }
 }
@@ -822,6 +971,12 @@ function renderCostTable() {
         <td>${formatMoney(item.price)}</td>
         <td>${formatNumber(item.packageQuantity)} ${escapeHtml(item.packageUnit)}</td>
         <td>${formatMoney(item.unitCost)} / ${item.baseUnit}</td>
+        <td>
+          <div class="table-actions">
+            <button class="table-action" type="button" data-action="edit" data-name="${escapeHtml(item.normalizedName)}">Editar</button>
+            <button class="table-action danger-action" type="button" data-action="delete" data-name="${escapeHtml(item.normalizedName)}">Eliminar</button>
+          </div>
+        </td>
       </tr>`,
     )
     .join("");

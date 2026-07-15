@@ -4,16 +4,45 @@ const HEADERS = ['insumo', 'precio', 'cantidad', 'unidad'];
 function doPost(e) {
   try {
     const payload = parsePayload_(e);
-    const row = normalizeRow_(payload);
     const sheet = getSheet_();
+    const action = String(payload.action || 'create').toLowerCase();
 
     ensureHeaders_(sheet);
-    upsertIngredient_(sheet, row);
+
+    if (action === 'create') {
+      const row = normalizeRow_(payload);
+      createIngredient_(sheet, row);
+
+      return json_({
+        ok: true,
+        message: 'Insumo guardado',
+        row,
+      });
+    }
+
+    if (action === 'update') {
+      const row = normalizeRow_(payload);
+      updateIngredient_(sheet, payload.originalInsumo || payload.insumo, row);
+
+      return json_({
+        ok: true,
+        message: 'Insumo actualizado',
+        row,
+      });
+    }
+
+    if (action === 'delete') {
+      deleteIngredient_(sheet, payload.originalInsumo || payload.insumo);
+
+      return json_({
+        ok: true,
+        message: 'Insumo eliminado',
+      });
+    }
 
     return json_({
-      ok: true,
-      message: 'Insumo guardado',
-      row,
+      ok: false,
+      message: 'Accion no valida',
     });
   } catch (error) {
     return json_({
@@ -81,23 +110,53 @@ function ensureHeaders_(sheet) {
   }
 }
 
-function upsertIngredient_(sheet, row) {
-  const data = sheet.getDataRange().getValues();
-  const normalizedName = normalize_(row.insumo);
-
-  for (let index = 1; index < data.length; index += 1) {
-    if (normalize_(data[index][0]) === normalizedName) {
-      sheet.getRange(index + 1, 1, 1, HEADERS.length).setValues([[
-        row.insumo,
-        row.precio,
-        row.cantidad,
-        row.unidad,
-      ]]);
-      return;
-    }
+function createIngredient_(sheet, row) {
+  if (findIngredientRow_(sheet, row.insumo) !== -1) {
+    throw new Error('El insumo ya existe');
   }
 
   sheet.appendRow([row.insumo, row.precio, row.cantidad, row.unidad]);
+}
+
+function updateIngredient_(sheet, originalInsumo, row) {
+  const currentRow = findIngredientRow_(sheet, originalInsumo);
+  if (currentRow === -1) {
+    throw new Error('No se encontro el insumo original');
+  }
+
+  const targetRow = findIngredientRow_(sheet, row.insumo);
+  if (targetRow !== -1 && targetRow !== currentRow) {
+    throw new Error('Ya existe otro insumo con ese nombre');
+  }
+
+  sheet.getRange(currentRow, 1, 1, HEADERS.length).setValues([[
+    row.insumo,
+    row.precio,
+    row.cantidad,
+    row.unidad,
+  ]]);
+}
+
+function deleteIngredient_(sheet, insumo) {
+  const rowNumber = findIngredientRow_(sheet, insumo);
+  if (rowNumber === -1) {
+    throw new Error('No se encontro el insumo');
+  }
+
+  sheet.deleteRow(rowNumber);
+}
+
+function findIngredientRow_(sheet, insumo) {
+  const data = sheet.getDataRange().getValues();
+  const normalizedName = normalize_(insumo);
+
+  for (let index = 1; index < data.length; index += 1) {
+    if (normalize_(data[index][0]) === normalizedName) {
+      return index + 1;
+    }
+  }
+
+  return -1;
 }
 
 function listIngredients_(sheet) {
