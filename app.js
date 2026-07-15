@@ -484,6 +484,8 @@ async function syncIngredientToBackend(item) {
   }
 
   try {
+    await fetchCostsFromAppsScript(appsScriptUrl);
+
     await fetch(appsScriptUrl, {
       method: "POST",
       mode: "no-cors",
@@ -498,14 +500,25 @@ async function syncIngredientToBackend(item) {
       }),
     });
 
+    await wait(1200);
+    const backendIngredients = await fetchCostsFromAppsScript(appsScriptUrl);
+    const wasSaved = backendIngredients.some((ingredient) => normalizeText(ingredient.insumo) === item.normalizedName);
+
+    if (!wasSaved) {
+      return {
+        type: "warn",
+        message: `No pude confirmar el guardado en el Sheet. Guardado localmente: ${item.name}`,
+      };
+    }
+
     return {
       type: "ok",
-      message: `Insumo enviado al Google Sheet: ${item.name}`,
+      message: `Insumo guardado en el Google Sheet: ${item.name}`,
     };
   } catch {
     return {
       type: "warn",
-      message: `No se pudo enviar al Sheet. Guardado localmente: ${item.name}`,
+      message: `Apps Script no esta disponible publicamente. Guardado localmente: ${item.name}`,
     };
   }
 }
@@ -991,6 +1004,12 @@ function roundUp(value, step) {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function formatMoney(value) {
