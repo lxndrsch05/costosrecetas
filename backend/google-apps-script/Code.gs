@@ -4,46 +4,7 @@ const HEADERS = ['insumo', 'precio', 'cantidad', 'unidad'];
 function doPost(e) {
   try {
     const payload = parsePayload_(e);
-    const sheet = getSheet_();
-    const action = String(payload.action || 'create').toLowerCase();
-
-    ensureHeaders_(sheet);
-
-    if (action === 'create') {
-      const row = normalizeRow_(payload);
-      createIngredient_(sheet, row);
-
-      return json_({
-        ok: true,
-        message: 'Insumo guardado',
-        row,
-      });
-    }
-
-    if (action === 'update') {
-      const row = normalizeRow_(payload);
-      updateIngredient_(sheet, payload.originalInsumo || payload.insumo, row);
-
-      return json_({
-        ok: true,
-        message: 'Insumo actualizado',
-        row,
-      });
-    }
-
-    if (action === 'delete') {
-      deleteIngredient_(sheet, payload.originalInsumo || payload.insumo);
-
-      return json_({
-        ok: true,
-        message: 'Insumo eliminado',
-      });
-    }
-
-    return json_({
-      ok: false,
-      message: 'Accion no valida',
-    });
+    return json_(handleAction_(payload));
   } catch (error) {
     return json_({
       ok: false,
@@ -54,6 +15,11 @@ function doPost(e) {
 
 function doGet(e) {
   try {
+    const payload = e && e.parameter ? e.parameter : {};
+    if (payload.action) {
+      return output_(e, handleAction_(payload));
+    }
+
     const sheet = getSheet_();
     ensureHeaders_(sheet);
 
@@ -77,6 +43,47 @@ function parsePayload_(e) {
   }
 
   return JSON.parse(e.postData.contents);
+}
+
+function handleAction_(payload) {
+  const sheet = getSheet_();
+  const action = String(payload.action || 'create').toLowerCase();
+
+  ensureHeaders_(sheet);
+
+  if (action === 'create') {
+    const row = normalizeRow_(payload);
+    createIngredient_(sheet, row);
+
+    return {
+      ok: true,
+      message: 'Insumo guardado',
+      row,
+    };
+  }
+
+  if (action === 'update') {
+    const row = normalizeRow_(payload);
+    updateIngredient_(sheet, payload.originalInsumo || payload.insumo, row);
+
+    return {
+      ok: true,
+      message: 'Insumo actualizado',
+      row,
+    };
+  }
+
+  if (action === 'delete') {
+    const deleted = deleteIngredient_(sheet, payload.originalInsumo || payload.insumo);
+
+    return {
+      ok: true,
+      message: 'Insumo eliminado',
+      deleted,
+    };
+  }
+
+  throw new Error('Accion no valida');
 }
 
 function normalizeRow_(payload) {
@@ -111,7 +118,7 @@ function ensureHeaders_(sheet) {
 }
 
 function createIngredient_(sheet, row) {
-  if (findIngredientRow_(sheet, row.insumo) !== -1) {
+  if (findIngredientRows_(sheet, row.insumo).length) {
     throw new Error('El insumo ya existe');
   }
 
@@ -119,13 +126,18 @@ function createIngredient_(sheet, row) {
 }
 
 function updateIngredient_(sheet, originalInsumo, row) {
-  const currentRow = findIngredientRow_(sheet, originalInsumo);
-  if (currentRow === -1) {
+  const currentRows = findIngredientRows_(sheet, originalInsumo);
+  if (!currentRows.length) {
     throw new Error('No se encontro el insumo original');
   }
 
-  const targetRow = findIngredientRow_(sheet, row.insumo);
-  if (targetRow !== -1 && targetRow !== currentRow) {
+  const targetRows = findIngredientRows_(sheet, row.insumo);
+  const currentRow = currentRows[0];
+  const hasExternalTarget = targetRows.some(function(rowNumber) {
+    return currentRows.indexOf(rowNumber) === -1;
+  });
+
+  if (hasExternalTarget) {
     throw new Error('Ya existe otro insumo con ese nombre');
   }
 
@@ -135,28 +147,42 @@ function updateIngredient_(sheet, originalInsumo, row) {
     row.cantidad,
     row.unidad,
   ]]);
+
+  currentRows
+    .slice(1)
+    .sort(function(a, b) { return b - a; })
+    .forEach(function(rowNumber) {
+      sheet.deleteRow(rowNumber);
+    });
 }
 
 function deleteIngredient_(sheet, insumo) {
-  const rowNumber = findIngredientRow_(sheet, insumo);
-  if (rowNumber === -1) {
+  const rowNumbers = findIngredientRows_(sheet, insumo);
+  if (!rowNumbers.length) {
     throw new Error('No se encontro el insumo');
   }
 
-  sheet.deleteRow(rowNumber);
+  rowNumbers
+    .sort(function(a, b) { return b - a; })
+    .forEach(function(rowNumber) {
+      sheet.deleteRow(rowNumber);
+    });
+
+  return rowNumbers.length;
 }
 
-function findIngredientRow_(sheet, insumo) {
+function findIngredientRows_(sheet, insumo) {
   const data = sheet.getDataRange().getValues();
   const normalizedName = normalize_(insumo);
+  const rows = [];
 
   for (let index = 1; index < data.length; index += 1) {
     if (normalize_(data[index][0]) === normalizedName) {
-      return index + 1;
+      rows.push(index + 1);
     }
   }
 
-  return -1;
+  return rows;
 }
 
 function listIngredients_(sheet) {

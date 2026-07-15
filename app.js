@@ -220,9 +220,21 @@ async function fetchCostsCsv(sourceUrl) {
 }
 
 function fetchCostsFromAppsScript(sourceUrl) {
+  return requestAppsScriptJsonp(sourceUrl).then((payload) => payload.ingredients || []);
+}
+
+function sendAppsScriptMutation(sourceUrl, payload) {
+  return requestAppsScriptJsonp(sourceUrl, payload);
+}
+
+function requestAppsScriptJsonp(sourceUrl, params = {}) {
   const callbackName = `recipeCostingCosts${Date.now()}${Math.floor(Math.random() * 1000)}`;
   const separator = sourceUrl.includes("?") ? "&" : "?";
-  const url = `${sourceUrl}${separator}callback=${callbackName}`;
+  const query = new URLSearchParams({
+    ...params,
+    callback: callbackName,
+  });
+  const url = `${sourceUrl}${separator}${query.toString()}`;
 
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
@@ -243,7 +255,7 @@ function fetchCostsFromAppsScript(sourceUrl) {
         reject(new Error(payload?.message || "Apps Script no devolvio insumos"));
         return;
       }
-      resolve(payload.ingredients || []);
+      resolve(payload);
     };
 
     script.onerror = () => {
@@ -578,20 +590,13 @@ async function syncIngredientToBackend(action, item, originalName = null) {
       };
     }
 
-    await fetch(appsScriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8",
-      },
-      body: JSON.stringify({
-        action,
-        originalInsumo: originalName,
-        insumo: item.name,
-        precio: item.price,
-        cantidad: item.packageQuantity,
-        unidad: item.packageUnit,
-      }),
+    await sendAppsScriptMutation(appsScriptUrl, {
+      action,
+      originalInsumo: originalName || "",
+      insumo: item.name,
+      precio: item.price,
+      cantidad: item.packageQuantity,
+      unidad: item.packageUnit,
     });
 
     await wait(1200);
@@ -636,17 +641,10 @@ async function deleteIngredient(item) {
   try {
     await fetchCostsFromAppsScript(appsScriptUrl);
 
-    await fetch(appsScriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8",
-      },
-      body: JSON.stringify({
-        action: "delete",
-        originalInsumo: item.normalizedName,
-        insumo: item.name,
-      }),
+    await sendAppsScriptMutation(appsScriptUrl, {
+      action: "delete",
+      originalInsumo: item.normalizedName,
+      insumo: item.name,
     });
 
     await wait(1200);

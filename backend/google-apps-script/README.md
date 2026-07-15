@@ -37,9 +37,9 @@ La web envia acciones internas al backend:
 
 - `create`: crea un insumo nuevo y rechaza duplicados.
 - `update`: actualiza un insumo existente.
-- `delete`: elimina un insumo existente.
+- `delete`: elimina todas las filas que coincidan con ese insumo, incluyendo duplicados antiguos.
 
-Despues de cambiar este archivo, debes crear una nueva version de la implementacion en Apps Script para que la URL `/exec` use el codigo actualizado.
+Estas acciones se ejecutan por JSONP para que GitHub Pages pueda comunicarse con Apps Script sin problemas de CORS. Despues de cambiar este archivo, debes crear una nueva version de la implementacion en Apps Script para que la URL `/exec` use el codigo actualizado.
 
 ## Nota
 
