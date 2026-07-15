@@ -224,7 +224,13 @@ function fetchCostsFromAppsScript(sourceUrl) {
 }
 
 function sendAppsScriptMutation(sourceUrl, payload) {
-  return requestAppsScriptJsonp(sourceUrl, payload);
+  return requestAppsScriptJsonp(sourceUrl, payload).then((response) => {
+    if (!response.row && !response.deleted) {
+      throw new Error("Apps Script esta usando una version anterior. Pega el Code.gs nuevo y crea una nueva version.");
+    }
+
+    return response;
+  });
 }
 
 function requestAppsScriptJsonp(sourceUrl, params = {}) {
@@ -623,7 +629,7 @@ async function syncIngredientToBackend(action, item, originalName = null) {
   } catch {
     return {
       type: "danger",
-      message: "Apps Script no esta disponible. No se pudo actualizar Google Sheets.",
+      message: "Apps Script no esta actualizado. Pega el Code.gs nuevo y crea una nueva version.",
     };
   }
 }
@@ -665,7 +671,7 @@ async function deleteIngredient(item) {
   } catch {
     return {
       type: "danger",
-      message: "Apps Script no esta disponible. No se pudo eliminar en Google Sheets.",
+      message: "Apps Script no esta actualizado. Pega el Code.gs nuevo y crea una nueva version.",
     };
   }
 }

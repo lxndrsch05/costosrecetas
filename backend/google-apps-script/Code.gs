@@ -1,5 +1,6 @@
 const SHEET_NAME = 'Insumos';
 const HEADERS = ['insumo', 'precio', 'cantidad', 'unidad'];
+const BACKEND_VERSION = '2026-07-15-crud-v2';
 
 function doPost(e) {
   try {
@@ -26,12 +27,14 @@ function doGet(e) {
     return output_(e, {
       ok: true,
       message: 'Backend de costos activo',
+      version: BACKEND_VERSION,
       ingredients: listIngredients_(sheet),
     });
   } catch (error) {
     return output_(e, {
       ok: false,
       message: error.message,
+      version: BACKEND_VERSION,
       ingredients: [],
     });
   }
@@ -58,6 +61,7 @@ function handleAction_(payload) {
     return {
       ok: true,
       message: 'Insumo guardado',
+      version: BACKEND_VERSION,
       row,
     };
   }
@@ -69,6 +73,7 @@ function handleAction_(payload) {
     return {
       ok: true,
       message: 'Insumo actualizado',
+      version: BACKEND_VERSION,
       row,
     };
   }
@@ -79,6 +84,7 @@ function handleAction_(payload) {
     return {
       ok: true,
       message: 'Insumo eliminado',
+      version: BACKEND_VERSION,
       deleted,
     };
   }
