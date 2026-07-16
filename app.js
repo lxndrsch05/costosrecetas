@@ -277,7 +277,9 @@ function requestAppsScriptJsonp(sourceUrl, params = {}) {
 function toggleCostList() {
   state.costsVisible = !state.costsVisible;
   elements.costListPanel.classList.toggle("hidden", !state.costsVisible);
-  elements.viewCostsButton.textContent = state.costsVisible ? "Ocultar lista" : "Ver lista";
+  elements.viewCostsButton.innerHTML = state.costsVisible
+    ? '<span class="material-symbols-outlined" aria-hidden="true">visibility_off</span> Ocultar lista'
+    : '<span class="material-symbols-outlined" aria-hidden="true">visibility</span> Ver lista';
   elements.viewCostsButton.setAttribute("aria-expanded", String(state.costsVisible));
 }
 

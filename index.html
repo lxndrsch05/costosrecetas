@@ -4,32 +4,75 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Precio Justo | Calculadora de recetas</title>
-    <link rel="stylesheet" href="styles.css?v=backend-version-check-20260715" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=stitch-front-20260716" />
   </head>
   <body>
+    <aside class="side-nav" aria-label="Navegacion principal">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">
+          <span class="material-symbols-outlined">restaurant_menu</span>
+        </div>
+        <div>
+          <p class="brand-title">Kitchen Manager</p>
+          <p class="brand-subtitle">Culinary Precision</p>
+        </div>
+      </div>
+
+      <a class="nav-item active" href="#recetas">
+        <span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span>
+        Recetas
+      </a>
+      <a class="nav-item" href="#insumos">
+        <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+        Insumos
+      </a>
+      <a class="nav-item" href="#detalle">
+        <span class="material-symbols-outlined" aria-hidden="true">analytics</span>
+        Analisis
+      </a>
+
+      <div class="nav-footer">
+        <span class="status-pill" id="dataStatus">Usando costos de ejemplo</span>
+      </div>
+    </aside>
+
+    <nav class="mobile-nav" aria-label="Navegacion movil">
+      <a class="mobile-nav-item active" href="#recetas">
+        <span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span>
+        Recetas
+      </a>
+      <a class="mobile-nav-item" href="#insumos">
+        <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+        Insumos
+      </a>
+    </nav>
+
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Panaderia y pasteleria</p>
+          <p class="eyebrow">Gestion de Recetas</p>
           <h1>Costeo de recetas</h1>
+          <p class="topbar-copy">Analiza tus insumos, calcula costos reales y define precios de venta por porcion.</p>
         </div>
-        <div class="status-pill" id="dataStatus">Usando costos de ejemplo</div>
       </header>
 
       <main class="workspace">
-        <section class="recipe-zone" aria-label="Calculadora de receta">
-          <div class="recipe-editor">
+        <section class="recipe-zone" id="recetas" aria-label="Calculadora de receta">
+          <div class="recipe-editor card">
             <div class="section-title">
               <div>
                 <p class="eyebrow">Receta</p>
-                <h2>Pega tu preparacion</h2>
+                <h2>Pega tu receta aqui</h2>
               </div>
               <button class="icon-button" id="sampleRecipeButton" type="button" title="Cargar receta de ejemplo" aria-label="Cargar receta de ejemplo">
-                <span aria-hidden="true">↻</span>
+                <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
               </button>
             </div>
 
-            <label for="recipeText">Copia o pega la receta aqui</label>
+            <label for="recipeText">Copia o pega los ingredientes</label>
             <textarea id="recipeText" spellcheck="false" placeholder="Ejemplo:
 500 g harina
 250 g azucar blanca
@@ -43,12 +86,21 @@
             </div>
 
             <div class="actions">
-              <button class="primary-button" id="calculateButton" type="button">calcular</button>
-              <button class="secondary-button" id="copyButton" type="button">Copiar resumen</button>
+              <button class="primary-button" id="calculateButton" type="button">
+                <span class="material-symbols-outlined" aria-hidden="true">calculate</span>
+                Calcular
+              </button>
+              <button class="secondary-button" id="copyButton" type="button">
+                <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+                Copiar resumen
+              </button>
             </div>
 
             <details class="settings-details">
-              <summary>Ajustes de calculo</summary>
+              <summary>
+                <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+                Ajustes de calculo
+              </summary>
               <div class="settings-grid">
                 <label>
                   Porciones
@@ -82,10 +134,10 @@
             </details>
           </div>
 
-          <aside class="result-panel" aria-label="Resultado de precio">
+          <aside class="result-panel card" aria-label="Resultado de precio">
             <div class="section-title">
               <div>
-                <p class="eyebrow">Calculo</p>
+                <p class="eyebrow">Analisis</p>
                 <h2>Resultados</h2>
               </div>
             </div>
@@ -117,7 +169,7 @@
           </aside>
         </section>
 
-        <section class="breakdown-zone" aria-label="Detalle del calculo">
+        <section class="breakdown-zone card" id="detalle" aria-label="Detalle del calculo">
           <div class="section-title">
             <div>
               <p class="eyebrow">Detalle</p>
@@ -141,7 +193,7 @@
           </div>
         </section>
 
-        <section class="sheet-zone" aria-label="Lista interna de insumos">
+        <section class="sheet-zone card" id="insumos" aria-label="Lista interna de insumos">
           <div class="sheet-config">
             <div>
               <p class="eyebrow">Costos</p>
@@ -152,9 +204,18 @@
             </div>
 
             <div class="actions">
-              <button class="primary-button compact" id="addIngredientButton" type="button">Agregar insumo</button>
-              <button class="secondary-button compact" id="viewCostsButton" type="button" aria-expanded="false" aria-controls="costListPanel">Ver lista</button>
-              <button class="secondary-button compact" id="refreshCostsButton" type="button">Actualizar costos</button>
+              <button class="primary-button compact" id="addIngredientButton" type="button">
+                <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                Agregar insumo
+              </button>
+              <button class="secondary-button compact" id="viewCostsButton" type="button" aria-expanded="false" aria-controls="costListPanel">
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                Ver lista
+              </button>
+              <button class="secondary-button compact" id="refreshCostsButton" type="button">
+                <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+                Actualizar costos
+              </button>
             </div>
           </div>
 
@@ -227,7 +288,7 @@
       </aside>
     </div>
 
-    <script src="config.js?v=backend-version-check-20260715"></script>
-    <script src="app.js?v=backend-version-check-20260715"></script>
+    <script src="config.js?v=stitch-front-20260716"></script>
+    <script src="app.js?v=stitch-front-20260716"></script>
   </body>
 </html>
