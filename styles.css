@@ -257,6 +257,15 @@ button:disabled {
   gap: 24px;
 }
 
+.tab-view {
+  display: none;
+}
+
+.tab-view.active {
+  display: grid;
+  gap: 24px;
+}
+
 .recipe-zone {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);

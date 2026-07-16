@@ -30,12 +30,14 @@ const state = {
   sourceCosts: [],
   customCosts: [],
   lastResult: null,
-  costsVisible: false,
+  costsVisible: true,
   drawerMode: "create",
   editingIngredientName: null,
 };
 
 const elements = {
+  tabLinks: document.querySelectorAll ? document.querySelectorAll("[data-tab]") : [],
+  tabPanels: document.querySelectorAll ? document.querySelectorAll("[data-tab-panel]") : [],
   dataStatus: document.querySelector("#dataStatus"),
   recipeText: document.querySelector("#recipeText"),
   servingsInput: document.querySelector("#servingsInput"),
@@ -145,6 +147,7 @@ const stopWords = new Set([
 ]);
 
 document.addEventListener("DOMContentLoaded", async () => {
+  setupTabs();
   await loadInternalCosts();
   resetCalculation();
 });
@@ -183,6 +186,35 @@ document.addEventListener("keydown", (event) => {
 ].forEach((input) => input.addEventListener("input", resetCalculation));
 
 elements.recipeText.addEventListener("input", resetCalculation);
+
+function setupTabs() {
+  elements.tabLinks.forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const selectedTab = link.dataset.tab;
+      if (!selectedTab) return;
+
+      event.preventDefault();
+      setActiveTab(selectedTab);
+
+      const targetId = link.getAttribute("href");
+      if (selectedTab === "recipes" && targetId && targetId !== "#recetas") {
+        window.setTimeout(() => document.querySelector(targetId)?.scrollIntoView({ behavior: "smooth" }), 0);
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+  });
+}
+
+function setActiveTab(tabName) {
+  elements.tabPanels.forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.tabPanel === tabName);
+  });
+
+  elements.tabLinks.forEach((link) => {
+    link.classList.toggle("active", link.dataset.tab === tabName);
+  });
+}
 
 async function loadInternalCosts() {
   const configuredUrl = String(appConfig.sheetCsvUrl || "").trim();
